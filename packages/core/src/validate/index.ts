@@ -13,6 +13,7 @@ import { DepGraph } from 'dependency-graph';
 import { readDocument } from '../ast/document';
 import { findDeprecatedUsages } from '../utils/graphql';
 import { validateQueryDepth } from './query-depth';
+import { validateComplexity } from './complexity';
 import { transformSchemaWithApollo, transformDocumentWithApollo } from '../utils/apollo';
 import { validateAliasCount } from './alias-count';
 import { validateDirectiveCount } from './directive-count';
@@ -65,6 +66,26 @@ export interface ValidateOptions {
    * @default Infinity
    */
   maxTokenCount?: number;
+  /**
+   * Fails when complexity score exceeds maximum complexity score (including the referenced fragments).
+   * @default Infinity
+   */
+  maxComplexityScore?: number;
+  /**
+   * Complexity Scalar cost config which using with maxComplexityScore.
+   * @default Infinity
+   */
+  complexityScalarCost?: number;
+  /**
+   * Complexity object cost config which using with maxComplexityScore.
+   * @default Infinity
+   */
+  complexityObjectCost?: number;
+  /**
+   * Complexity depth cost factor config which using with maxComplexityScore.
+   * @default Infinity
+   */
+  complexityDepthCostFactor?: number;
 }
 
 export function validate(schema: GraphQLSchema, sources: Source[], options?: ValidateOptions): InvalidDocument[] {
@@ -141,6 +162,24 @@ export function validate(schema: GraphQLSchema, sources: Source[], options?: Val
 
         if (depthError) {
           errors.push(depthError);
+        }
+      }
+
+      if (config.maxComplexityScore) {
+        const complexityScoreError = validateComplexity({
+          source: doc.source,
+          doc: transformedDoc,
+          maxComplexityScore: config.maxComplexityScore,
+          config: {
+            scalarCost: config.complexityScalarCost ?? 1,
+            objectCost: config.complexityObjectCost ?? 2,
+            depthCostFactor: config.complexityDepthCostFactor ?? 1.5,
+          },
+          fragmentGraph: graph,
+        });
+
+        if (complexityScoreError) {
+          errors.push(complexityScoreError);
         }
       }
 

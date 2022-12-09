@@ -24,6 +24,10 @@ export function handler({
   relativePaths,
   output,
   silent,
+  maxComplexityScore,
+  complexityScalarCost,
+  complexityObjectCost,
+  complexityDepthCostFactor,
 }: {
   schema: GraphQLSchema;
   documents: DocumentSource[];
@@ -40,6 +44,10 @@ export function handler({
   relativePaths?: boolean;
   output?: string;
   silent?: boolean;
+  maxComplexityScore?: number;
+  complexityScalarCost?: number;
+  complexityObjectCost?: number;
+  complexityDepthCostFactor?: number;
 }) {
   let invalidDocuments = validateDocuments(
     schema,
@@ -52,6 +60,10 @@ export function handler({
       maxTokenCount,
       apollo,
       keepClientFields,
+      maxComplexityScore,
+      complexityScalarCost,
+      complexityObjectCost,
+      complexityDepthCostFactor,
     }
   );
 
@@ -153,6 +165,10 @@ export default createCommand<
     output?: string;
     silent?: boolean;
     ignore?: string[];
+    maxComplexityScore?: number;
+    complexityScalarCost?: number;
+    complexityObjectCost?: number;
+    complexityDepthCostFactor?: number;
   } & GlobalArgs
 >(api => {
   const { loaders } = api;
@@ -239,6 +255,26 @@ export default createCommand<
             describe: 'Output JSON file',
             type: 'string',
           },
+          maxComplexityScore: {
+            describe: 'Fail on complexity score operations',
+            type: 'number',
+            default: 1500,
+          },
+          complexityScalarCost: {
+            describe: 'Scarlar cost config to use with maxComplexityScore',
+            type: 'number',
+            default: 1,
+          },
+          complexityObjectCost: {
+            describe: 'Object cost config to use with maxComplexityScore',
+            type: 'number',
+            default: 2,
+          },
+          complexityDepthCostFactor: {
+            describe: 'depth cost factor config to use with maxComplexityScore',
+            type: 'number',
+            default: 1.5,
+          },
         });
     },
     async handler(args) {
@@ -259,6 +295,10 @@ export default createCommand<
       const relativePaths = args.relativePaths || false;
       const onlyErrors = args.onlyErrors || false;
       const ignore = args.ignore || [];
+      const maxComplexityScore = args.maxComplexityScore;
+      const complexityScalarCost = args.complexityScalarCost;
+      const complexityObjectCost = args.complexityObjectCost;
+      const complexityDepthCostFactor = args.complexityDepthCostFactor;
 
       const schema = await loaders.loadSchema(
         args.schema,
@@ -290,6 +330,10 @@ export default createCommand<
         output,
         relativePaths,
         onlyErrors,
+        maxComplexityScore,
+        complexityScalarCost,
+        complexityObjectCost,
+        complexityDepthCostFactor,
       });
     },
   };
